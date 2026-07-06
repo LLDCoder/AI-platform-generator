@@ -1,0 +1,43 @@
+services:
+  ai-generation-service:
+    image: "${DOCKER_IMAGE_AI_GENERATION:-ai-generation-service}:${TAG:-latest}"
+    container_name: ff-ai-generation-service
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: services/ai_generation_service/Dockerfile
+      args:
+        PYTHON_BASE_IMAGE: docker.m.daocloud.io/library/python:3.11-slim
+        PIP_INDEX_URL: https://pypi.tuna.tsinghua.edu.cn/simple
+    env_file:
+      - .env
+    environment:
+      AI_GENERATION_DATA_DIR: /data
+      AI_GENERATION_API_KEY: ${AI_GENERATION_API_KEY:-}
+      AI_GENERATION_TIMEOUT_SECONDS: ${AI_GENERATION_TIMEOUT_SECONDS:-1800}
+      HERMES_RUNS_BASE_URL: ${HERMES_RUNS_BASE_URL:-http://host.docker.internal:18642}
+      HERMES_AGENT_API_KEY: ${HERMES_AGENT_API_KEY:-hermes-local-dev-key}
+      HERMES_AGENT_MODEL: ${HERMES_AGENT_MODEL:-gpt-5.5}
+      PLATFORM_BASE_URL: ${PLATFORM_BASE_URL:-}
+      PLATFORM_API_KEY: ${PLATFORM_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      RAGFLOW_BASE_URL: ${RAGFLOW_BASE_URL:-}
+      RAGFLOW_API_KEY: ${RAGFLOW_API_KEY:-}
+      RAGFLOW_TIMEOUT_SECONDS: ${RAGFLOW_TIMEOUT_SECONDS:-8}
+    volumes:
+      - ai-generation-data:/data
+      - task-runtime-data:/opt/data/task-runtime
+    ports:
+      - "8091:8091"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8091/health', timeout=5).read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+volumes:
+  ai-generation-data:
+  task-runtime-data:
+
